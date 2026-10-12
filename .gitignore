@@ -15,7 +15,8 @@ data/raw/
 *.docx
 *.pdf
 *.txt
-*.html
+*.
+*.tmp
 nhật ký làm việc.md
 
 # Bỏ qua thư viện bên thứ ba
