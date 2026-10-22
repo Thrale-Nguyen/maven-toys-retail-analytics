@@ -13,7 +13,8 @@ Mô tả: Hợp nhất dữ liệu chuỗi bán lẻ đồ chơi Maven Toys theo
        2. Làm sạch giá trị tiền tệ: loại bỏ ký tự '$' và khoảng trắng thừa trong Product_Cost & Product_Price.
        3. Thực hiện Left Join bảo toàn Grain giao dịch (Zero fan-out: đúng 829,262 dòng).
        4. Tính toán các chỉ số kinh doanh phái sinh: Doanh thu (Revenue), Giá vốn (Cost), Lợi nhuận gộp (Gross_Profit).
-       5. Xuất tập dữ liệu hợp nhất hoàn chỉnh sang 'data/processed/maven_toy_sales.csv' (và định dạng tối ưu .parquet).
+       5. Loại bỏ các cột mã kỹ thuật và thuộc tính dư thừa: Store_ID, Store_Open_Date, Product_ID.
+       6. Xuất tập dữ liệu hợp nhất hoàn chỉnh sang 'data/processed/maven_toy_sales.csv' (và định dạng tối ưu .parquet).
 """
 
 import sys
@@ -209,16 +210,14 @@ def merge_maven_toy_sales(
     merged["Cost"] = (merged["Units"] * merged["Product_Cost"]).round(2)
     merged["Gross_Profit"] = (merged["Revenue"] - merged["Cost"]).round(2)
 
-    # Sắp xếp lại thứ tự cột khoa học, dễ theo dõi
+    # 5. Loại bỏ các cột thừa, không có giá trị phân tích trực tiếp (Store_ID, Store_Open_Date, Product_ID)
+    # và sắp xếp lại thứ tự cột tinh gọn, khoa học
     final_columns = [
         "Sale_ID",
         "Date",
-        "Store_ID",
         "Store_Name",
         "Store_City",
         "Store_Location",
-        "Store_Open_Date",
-        "Product_ID",
         "Product_Name",
         "Product_Category",
         "Product_Cost",
@@ -229,11 +228,14 @@ def merge_maven_toy_sales(
         "Gross_Profit",
     ]
     merged = merged[final_columns]
+    if verbose:
+        print("   ✓ Đã loại bỏ các cột mã kỹ thuật và thuộc tính dư thừa: Store_ID, Store_Open_Date, Product_ID")
+        print(f"   ✓ Bộ dữ liệu sau tinh giản gồm {len(final_columns)} cột phân tích giá trị cao.")
 
-    # 5. Lưu kết quả ra file trong data/processed
+    # 6. Lưu kết quả ra file trong data/processed
     out_csv_path = proc_dir / output_filename
     if verbose:
-        print(f"\n5. Đang xuất dữ liệu ra file '{out_csv_path.name}'...")
+        print(f"\n6. Đang xuất dữ liệu ra file '{out_csv_path.name}'...")
 
     merged.to_csv(out_csv_path, index=False, encoding="utf-8")
     file_size_mb = out_csv_path.stat().st_size / (1024 * 1024)
@@ -255,7 +257,7 @@ def merge_maven_toy_sales(
             if verbose:
                 print(f"   (Bỏ qua lưu parquet: {e})")
 
-    # 6. Tổng kết số liệu kinh doanh chuẩn (Ground Truth)
+    # 7. Tổng kết số liệu kinh doanh chuẩn (Ground Truth)
     if verbose:
         print_business_kpis(merged)
 
